@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'coin_data.dart';
 import 'dart:io' show Platform;
+import 'dart:math';
+
+import 'coin_data.dart';
+import 'coin_data.dart';
 
 class PriceScreen extends StatefulWidget {
   @override
@@ -9,9 +13,14 @@ class PriceScreen extends StatefulWidget {
 }
 
 class _PriceScreenState extends State<PriceScreen> {
-  DropdownButton<String> getDropDownMenu() {
-    String val = 'USD';
+  var dataInfo;
 
+  String curVal;
+  String btcVal = '?';
+  String ethVal = '?';
+  String ltcVal = '?';
+
+  DropdownButton<String> getDropDownMenu() {
     List<DropdownMenuItem<String>> dropDownElements = [];
     for (int i = 0; i < currenciesList.length; i++) {
       var element = DropdownMenuItem(
@@ -21,13 +30,16 @@ class _PriceScreenState extends State<PriceScreen> {
       dropDownElements.add(element);
     }
     return DropdownButton<String>(
-      value: val,
+      value: curVal,
       items: dropDownElements,
       onChanged: (value) {
         print(value);
         setState(
           () {
-            val = value;
+            curVal = value;
+            getVal('BTC');
+            getVal('ETH');
+            getVal('LTC');
           },
         );
       },
@@ -52,6 +64,34 @@ class _PriceScreenState extends State<PriceScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  void getVal(String crypto) async {
+    CoinData _coinData = CoinData();
+    try {
+      var data = await _coinData.getData(crypto, curVal);
+      dataInfo = data['rate'];
+      updateUI(crypto);
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  void updateUI(String crypto) {
+    setState(() {
+      if (crypto == 'BTC') {
+        btcVal = dataInfo.round().toString();
+      } else if (crypto == 'ETH') {
+        ethVal = dataInfo.round().toString();
+      } else {
+        ltcVal = dataInfo.round().toString();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -64,23 +104,23 @@ class _PriceScreenState extends State<PriceScreen> {
         children: <Widget>[
           Padding(
             padding: EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 0),
-            child: Card(
-              color: Colors.lightBlueAccent,
-              elevation: 5.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
-                child: Text(
-                  '1 BTC = ? USD',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+            child: cryptoBlock(
+              'BTC',
+              btcVal,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(18.0, 0, 18.0, 0),
+            child: cryptoBlock(
+              'ETH',
+              ethVal,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(18.0, 0, 18.0, 0),
+            child: cryptoBlock(
+              'LTC',
+              ltcVal,
             ),
           ),
           Container(
@@ -91,6 +131,27 @@ class _PriceScreenState extends State<PriceScreen> {
             child: Platform.isIOS ? iosDropDown() : getDropDownMenu(),
           ),
         ],
+      ),
+    );
+  }
+
+  Card cryptoBlock(String crypto, String val) {
+    return Card(
+      color: Colors.lightBlueAccent,
+      elevation: 5.0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
+        child: Text(
+          '1 $crypto = $val $curVal',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 20.0,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
